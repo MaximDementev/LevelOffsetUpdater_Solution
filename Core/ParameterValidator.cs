@@ -39,7 +39,8 @@ namespace LevelOffsetUpdater.Core
             if (paramDefinition == null)
             {
                 result.IsValid = false;
-                result.ErrorMessage = $"Параметр '{parameterName}' не найден в проекте.";
+                result.ErrorMessage = $"Параметр '{parameterName}' не найден в проекте.\n" +
+                    $"Обратиться в ОИМ";
                 return result;
             }
 
@@ -47,7 +48,8 @@ namespace LevelOffsetUpdater.Core
             if (binding is TypeBinding)
             {
                 result.IsValid = false;
-                result.ErrorMessage = $"Параметр '{parameterName}' является параметром типа, а должен быть параметром экземпляра.";
+                result.ErrorMessage = $"Параметр '{parameterName}' является параметром типа, а должен быть параметром экземпляра.\n" +
+                    $"Обратиться в ОИМ";
                 return result;
             }
 
@@ -69,7 +71,8 @@ namespace LevelOffsetUpdater.Core
                 if (!hasDoors || !hasWindows)
                 {
                     result.IsValid = false;
-                    result.ErrorMessage = $"Параметр '{parameterName}' не применим к категориям 'Двери' и 'Окна'.";
+                    result.ErrorMessage = $"Параметр '{parameterName}' не применим к категориям 'Двери' и 'Окна'.\n" +
+                    $"Обратиться в ОИМ";
                     return result;
                 }
             }

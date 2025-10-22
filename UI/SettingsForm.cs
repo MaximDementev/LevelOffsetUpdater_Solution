@@ -186,38 +186,48 @@ namespace LevelOffsetUpdater.UI
             // 
             // chkAutoUpdate
             // 
-            this.chkAutoUpdate.Location = new System.Drawing.Point(20, 20);
+            this.chkAutoUpdate.Location = new System.Drawing.Point(27, 25);
+            this.chkAutoUpdate.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.chkAutoUpdate.Name = "chkAutoUpdate";
-            this.chkAutoUpdate.Size = new System.Drawing.Size(320, 46);
+            this.chkAutoUpdate.Size = new System.Drawing.Size(385, 82);
             this.chkAutoUpdate.TabIndex = 0;
-            this.chkAutoUpdate.Text = "Автоматически обновлять отметки расположения (настройка сохраняется при перезагру" +
-    "зке Revit)";
+            this.chkAutoUpdate.Text =  "Автоматически обновлять параметр \nADSK_Размер_Отметка расположения\n" +
+                "- отметка расположения\n(настройка сохраняется при перезагрузке Revit)";
             this.chkAutoUpdate.UseVisualStyleBackColor = true;
             this.chkAutoUpdate.CheckedChanged += new System.EventHandler(this.chkAutoUpdate_CheckedChanged);
             // 
             // chkAutoUpdateWallDistance
             // 
-            this.chkAutoUpdateWallDistance.Location = new System.Drawing.Point(20, 72);
+            this.chkAutoUpdateWallDistance.Location = new System.Drawing.Point(27, 125);
+            this.chkAutoUpdateWallDistance.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.chkAutoUpdateWallDistance.Name = "chkAutoUpdateWallDistance";
-            this.chkAutoUpdateWallDistance.Size = new System.Drawing.Size(299, 46);
+            this.chkAutoUpdateWallDistance.Size = new System.Drawing.Size(385, 86);
             this.chkAutoUpdateWallDistance.TabIndex = 8;
-            this.chkAutoUpdateWallDistance.Text = "Автоматически обновлять расстояние до низа стены (настройка сохраняется при перез" +
-    "агрузке Revit)";
+            this.chkAutoUpdateWallDistance.Text = "Автоматически обновлять  \nKRGP_Отверстие_Расстояние до низа стены\n" +
+                "- расстояние до низа стены\n(настройка сохраняется при перезагрузке Revit)";
             this.chkAutoUpdateWallDistance.UseVisualStyleBackColor = true;
             this.chkAutoUpdateWallDistance.CheckedChanged += new System.EventHandler(this.chkAutoUpdateWallDistance_CheckedChanged);
             // 
             // lblRoundingStep
             // 
+            this.lblRoundingStep.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.lblRoundingStep.AutoSize = true;
-            this.lblRoundingStep.Location = new System.Drawing.Point(20, 130);
+            this.lblRoundingStep.Location = new System.Drawing.Point(34, 221);
+            this.lblRoundingStep.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lblRoundingStep.Name = "lblRoundingStep";
-            this.lblRoundingStep.Size = new System.Drawing.Size(116, 13);
+            this.lblRoundingStep.Size = new System.Drawing.Size(143, 16);
             this.lblRoundingStep.TabIndex = 1;
             this.lblRoundingStep.Text = "Шаг округления (мм):";
             // 
             // numRoundingStep
             // 
-            this.numRoundingStep.Location = new System.Drawing.Point(200, 128);
+            this.numRoundingStep.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.numRoundingStep.Location = new System.Drawing.Point(274, 219);
+            this.numRoundingStep.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.numRoundingStep.Maximum = new decimal(new int[] {
             1000,
             0,
@@ -229,7 +239,7 @@ namespace LevelOffsetUpdater.UI
             0,
             0});
             this.numRoundingStep.Name = "numRoundingStep";
-            this.numRoundingStep.Size = new System.Drawing.Size(80, 20);
+            this.numRoundingStep.Size = new System.Drawing.Size(107, 22);
             this.numRoundingStep.TabIndex = 2;
             this.numRoundingStep.Value = new decimal(new int[] {
             5,
@@ -240,16 +250,24 @@ namespace LevelOffsetUpdater.UI
             // 
             // lblWarningThreshold
             // 
-            this.lblWarningThreshold.Location = new System.Drawing.Point(20, 149);
+            this.lblWarningThreshold.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.lblWarningThreshold.Location = new System.Drawing.Point(34, 244);
+            this.lblWarningThreshold.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lblWarningThreshold.Name = "lblWarningThreshold";
-            this.lblWarningThreshold.Size = new System.Drawing.Size(174, 37);
+            this.lblWarningThreshold.Size = new System.Drawing.Size(232, 46);
             this.lblWarningThreshold.TabIndex = 4;
             this.lblWarningThreshold.Text = "Предупреждать при количестве элементов больше:";
             this.lblWarningThreshold.Click += new System.EventHandler(this.lblWarningThreshold_Click);
             // 
             // numWarningThreshold
             // 
-            this.numWarningThreshold.Location = new System.Drawing.Point(200, 163);
+            this.numWarningThreshold.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.numWarningThreshold.Location = new System.Drawing.Point(274, 262);
+            this.numWarningThreshold.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.numWarningThreshold.Maximum = new decimal(new int[] {
             10000,
             0,
@@ -261,7 +279,7 @@ namespace LevelOffsetUpdater.UI
             0,
             0});
             this.numWarningThreshold.Name = "numWarningThreshold";
-            this.numWarningThreshold.Size = new System.Drawing.Size(80, 20);
+            this.numWarningThreshold.Size = new System.Drawing.Size(107, 22);
             this.numWarningThreshold.TabIndex = 5;
             this.numWarningThreshold.Value = new decimal(new int[] {
             1000,
@@ -272,9 +290,13 @@ namespace LevelOffsetUpdater.UI
             // 
             // btnUpdateAll
             // 
-            this.btnUpdateAll.Location = new System.Drawing.Point(32, 243);
+            this.btnUpdateAll.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnUpdateAll.Location = new System.Drawing.Point(51, 339);
+            this.btnUpdateAll.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.btnUpdateAll.Name = "btnUpdateAll";
-            this.btnUpdateAll.Size = new System.Drawing.Size(150, 30);
+            this.btnUpdateAll.Size = new System.Drawing.Size(200, 37);
             this.btnUpdateAll.TabIndex = 6;
             this.btnUpdateAll.Text = "Обновить у всех сейчас";
             this.btnUpdateAll.UseVisualStyleBackColor = true;
@@ -282,9 +304,13 @@ namespace LevelOffsetUpdater.UI
             // 
             // btnClose
             // 
-            this.btnClose.Location = new System.Drawing.Point(188, 243);
+            this.btnClose.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnClose.Location = new System.Drawing.Point(259, 339);
+            this.btnClose.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.btnClose.Name = "btnClose";
-            this.btnClose.Size = new System.Drawing.Size(90, 30);
+            this.btnClose.Size = new System.Drawing.Size(120, 37);
             this.btnClose.TabIndex = 7;
             this.btnClose.Text = "Закрыть";
             this.btnClose.UseVisualStyleBackColor = true;
@@ -292,18 +318,22 @@ namespace LevelOffsetUpdater.UI
             // 
             // lblRoundingStepUnit
             // 
+            this.lblRoundingStepUnit.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.lblRoundingStepUnit.AutoSize = true;
-            this.lblRoundingStepUnit.Location = new System.Drawing.Point(285, 130);
+            this.lblRoundingStepUnit.Location = new System.Drawing.Point(387, 221);
+            this.lblRoundingStepUnit.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lblRoundingStepUnit.Name = "lblRoundingStepUnit";
-            this.lblRoundingStepUnit.Size = new System.Drawing.Size(23, 13);
+            this.lblRoundingStepUnit.Size = new System.Drawing.Size(25, 16);
             this.lblRoundingStepUnit.TabIndex = 3;
             this.lblRoundingStepUnit.Text = "мм";
             // 
             // SettingsForm
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(331, 285);
+            this.ClientSize = new System.Drawing.Size(441, 389);
             this.Controls.Add(this.btnClose);
             this.Controls.Add(this.btnUpdateAll);
             this.Controls.Add(this.numWarningThreshold);
@@ -314,6 +344,7 @@ namespace LevelOffsetUpdater.UI
             this.Controls.Add(this.chkAutoUpdateWallDistance);
             this.Controls.Add(this.chkAutoUpdate);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
+            this.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "SettingsForm";
