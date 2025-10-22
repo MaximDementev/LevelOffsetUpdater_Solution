@@ -17,7 +17,9 @@ namespace KRGPMagic.Plugins.LevelOffsetUpdater
         private const string TAB_NAME = "KRGPMagic";
         private const string PANEL_NAME = "Проемы и отверстия";
         private const string SETTINGS_BUTTON_NAME = "Настройки обновления";
-        private const string UPDATE_BUTTON_NAME = "Обновить\nотметки проемов"; 
+        private const string UPDATE_BUTTON_NAME = "Обновить\nотметки проемов";
+        private const string UPDATE_TO_WALL_DIST_BUTTON_NAME = "Обновить\nрасстояния до НС";
+
 
         private AutoUpdateEventHandler _autoUpdateService;
         #endregion
@@ -106,25 +108,37 @@ namespace KRGPMagic.Plugins.LevelOffsetUpdater
         // Создает SplitButton с обеими командами
         private void CreateLevelOffsetSplitButton(RibbonPanel panel)
         {
-            // Создаем основную кнопку (обновление)
+            // Создаем кнопку обновления отметок
             var mainButtonData = new PushButtonData(
-                "LevelOffsetUpdaterUpdate",
+                nameof(UpdateCommand),
                 UPDATE_BUTTON_NAME,
                 Assembly.GetExecutingAssembly().Location,
                 typeof(UpdateCommand).FullName);
 
             mainButtonData.ToolTip = "Обновить отметки расположения у всех дверей и окон";
-            mainButtonData.LongDescription = "Выполняет ручное обновление параметра 'ADSK_Размер_Отметка расположения' для всех дверей и окон в текущем проекте";
+            mainButtonData.LongDescription = $"Выполняет ручное обновление параметра  {Constants.TARGET_PARAMETER_NAME} для всех дверей и окон в текущем проекте";
+
+            // Создаем кнопку обновления расстояния до НС
+            var distanceToWallButtonData = new PushButtonData(
+                nameof(UpdateWallDistanceCommand),
+                UPDATE_TO_WALL_DIST_BUTTON_NAME,
+                Assembly.GetExecutingAssembly().Location,
+                typeof(UpdateWallDistanceCommand).FullName);
+
+            distanceToWallButtonData.ToolTip = "Обновить расстояния до низа стен у всех дверей и окон";
+            distanceToWallButtonData.LongDescription = $"Выполняет ручное обновление параметра {Constants.WALL_DISTANCE_PARAMETER_NAME} для всех дверей и окон в текущем проекте";
+
+            
 
             // Создаем кнопку настроек для выпадающего меню
             var settingsButtonData = new PushButtonData(
-                "LevelOffsetUpdaterSettings",
+                nameof(SettingsCommand),
                 SETTINGS_BUTTON_NAME,
                 Assembly.GetExecutingAssembly().Location,
                 typeof(SettingsCommand).FullName);
 
             settingsButtonData.ToolTip = "Открыть настройки автоматического обновления отметок расположения";
-            settingsButtonData.LongDescription = "Позволяет настроить параметры автоматического обновления параметра 'ADSK_Размер_Отметка расположения' для дверей и окон";
+            settingsButtonData.LongDescription = "Позволяет настроить параметры автоматического обновления параметров для дверей и окон";
 
             // Создаем SplitButton
             var splitButtonData = new SplitButtonData("LevelOffsetUpdaterSplit", "Level Offset");
@@ -132,6 +146,9 @@ namespace KRGPMagic.Plugins.LevelOffsetUpdater
 
             // Добавляем основную кнопку
             var mainButton = splitButton.AddPushButton(mainButtonData);
+
+            // Добавляем основную кнопку
+            var distanceToWallButton = splitButton.AddPushButton(distanceToWallButtonData);
 
             // Добавляем кнопку настроек в выпадающее меню
             var settingsButton = splitButton.AddPushButton(settingsButtonData);
@@ -142,6 +159,15 @@ namespace KRGPMagic.Plugins.LevelOffsetUpdater
             {
                 mainButton.LargeImage = new BitmapImage(new Uri(updateIcon));
                 mainButton.Image = new BitmapImage(new Uri(updateIcon));
+                splitButton.LargeImage = new BitmapImage(new Uri(updateIcon));
+            }
+
+            // Устанавливаем иконки
+            var distanceToWallUpdateIcon = GetIconPath("update.png");
+            if (File.Exists(updateIcon))
+            {
+                distanceToWallButton.LargeImage = new BitmapImage(new Uri(updateIcon));
+                distanceToWallButton.Image = new BitmapImage(new Uri(updateIcon));
                 splitButton.LargeImage = new BitmapImage(new Uri(updateIcon));
             }
 
@@ -162,4 +188,5 @@ namespace KRGPMagic.Plugins.LevelOffsetUpdater
         }
         #endregion
     }
+
 }

@@ -4,14 +4,13 @@ using Autodesk.Revit.UI;
 using System;
 using LevelOffsetUpdater.Core;
 using LevelOffsetUpdater.Services;
-using LevelOffsetUpdater.UI;
 
 namespace KRGPMagic.Plugins.LevelOffsetUpdater
 {
-    // Команда для открытия окна настроек
+    // Команда для ручного обновления отметок расположения
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
-    public class SettingsCommand : IExternalCommand
+    public class UpdateWallDistanceCommand : IExternalCommand
     {
         #region IPlugin Implementation
         public bool IsEnabled { get; set; }
@@ -29,30 +28,25 @@ namespace KRGPMagic.Plugins.LevelOffsetUpdater
         #region IExternalCommand Implementation
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {
-            Document doc = commandData.Application.ActiveUIDocument.Document;
             try
             {
-                var autoUpdateService = LevelOffsetUpdaterApplication.AutoUpdateService;
                 var elementFilter = new DoorWindowFilter();
                 var manualUpdateService = new ManualUpdateEventHandler(elementFilter);
 
-                if (autoUpdateService == null || manualUpdateService == null)
+                if (manualUpdateService == null)
                 {
-                    message = "Один или несколько сервисов не инициализированы.";
-                    TaskDialog.Show("Settings Command", message);
+                    message = "Сервис ручного обновления не инициализирован.";
+                    TaskDialog.Show("Update Command", message);
                     return Result.Failed;
                 }
 
-                using (var form = new SettingsForm(autoUpdateService, manualUpdateService, doc))
-                {
-                    form.ShowDialog();
-                }
+                manualUpdateService.RaiseWallDistanceUpdate();
                 return Result.Succeeded;
             }
             catch (Exception ex)
             {
                 message = ex.Message;
-                TaskDialog.Show("Settings Command Error", $"Произошла ошибка: {ex.Message}");
+                TaskDialog.Show("Update Command Error", $"Произошла ошибка: {ex.Message}");
                 return Result.Failed;
             }
         }

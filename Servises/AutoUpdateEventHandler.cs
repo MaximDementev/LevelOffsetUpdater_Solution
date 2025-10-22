@@ -6,8 +6,6 @@ using LevelOffsetUpdater.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using static System.Net.Mime.MediaTypeNames;
-using System.Xml.Linq;
 using Settings = LevelOffsetUpdater.Core.Settings;
 
 namespace LevelOffsetUpdater.Services
@@ -23,6 +21,8 @@ namespace LevelOffsetUpdater.Services
         private Document _currentDocument;
         private bool _isEnabled;
         private Settings _settings;
+        private bool _offsetParameterValid = false;
+        private bool _wallDistanceParameterValid = false;
         #endregion
 
         #region Properties
@@ -40,7 +40,7 @@ namespace LevelOffsetUpdater.Services
             _elementFilter = elementFilter ?? throw new ArgumentNullException(nameof(elementFilter));
             _externalEvent = ExternalEvent.Create(this);
             _settings = Settings.Load();
-            _isEnabled = _settings.AutoUpdateEnabled;
+            _isEnabled = _settings.AutoUpdateEnabled || _settings.AutoUpdateWallDistanceEnabled;
         }
         #endregion
 
@@ -59,10 +59,11 @@ namespace LevelOffsetUpdater.Services
         #endregion
 
         #region Event Handlers
-        // Обрабатывает изменения в документе
         private void OnDocumentChanged(object sender, DocumentChangedEventArgs e)
         {
-            if (!_isEnabled) return;
+            _settings = Settings.Load();
+
+            if (!_settings.AutoUpdateEnabled && !_settings.AutoUpdateWallDistanceEnabled) return;
 
             try
             {
@@ -72,7 +73,6 @@ namespace LevelOffsetUpdater.Services
 
                 bool hasElementsToProcess = false;
 
-                // Проверяем добавленные элементы
                 foreach (var elementId in addedElements)
                 {
                     var element = _currentDocument.GetElement(elementId);
@@ -83,7 +83,6 @@ namespace LevelOffsetUpdater.Services
                     }
                 }
 
-                // Проверяем измененные элементы
                 foreach (var elementId in modifiedElements)
                 {
                     var element = _currentDocument.GetElement(elementId);
@@ -107,7 +106,6 @@ namespace LevelOffsetUpdater.Services
         #endregion
 
         #region IExternalEventHandler Implementation
-        // Выполняет обновление элементов в безопасном контексте
         public void Execute(UIApplication app)
         {
             if (_currentDocument == null || !_elementsToProcess.Any())
@@ -115,7 +113,17 @@ namespace LevelOffsetUpdater.Services
 
             try
             {
-                using (Transaction trans = new Transaction(_currentDocument, "Автоматическое обновление отметок"))
+                _settings = Settings.Load();
+
+                ValidateParameters(_currentDocument, _settings);
+
+                if (!_offsetParameterValid && !_wallDistanceParameterValid)
+                {
+                    _elementsToProcess.Clear();
+                    return;
+                }
+
+                using (Transaction trans = new Transaction(_currentDocument, "Автоматическое обновление параметров"))
                 {
                     trans.Start();
 
@@ -123,20 +131,20 @@ namespace LevelOffsetUpdater.Services
                     _elementsToProcess.Clear();
 
                     var calculator = new OffsetCalculator(_currentDocument);
-                    _settings = Settings.Load(); // Обновляем настройки
 
                     foreach (var elementId in elementsToUpdate)
                     {
                         var element = _currentDocument.GetElement(elementId);
                         if (element is FamilyInstance familyInstance && _elementFilter.IsValidElement(familyInstance))
                         {
-                            if (!UpdateElementOffset(familyInstance, calculator))
+                            if (_settings.AutoUpdateEnabled && _offsetParameterValid)
                             {
-                                // Если обновление не удалось из-за проблем с параметром, отключаем автообновление
-                                _isEnabled = false;
-                                _settings.AutoUpdateEnabled = false;
-                                _settings.Save();
-                                break;
+                                ElementUpdateService.UpdateElementOffset(familyInstance, calculator, _settings);
+                            }
+
+                            if (_settings.AutoUpdateWallDistanceEnabled && _wallDistanceParameterValid)
+                            {
+                                ElementUpdateService.UpdateWallDistance(familyInstance, calculator, _settings);
                             }
                         }
                     }
@@ -157,66 +165,49 @@ namespace LevelOffsetUpdater.Services
         #endregion
 
         #region Private Methods
-        // Обновляет отметку расположения для элемента
-        private bool UpdateElementOffset(FamilyInstance familyInstance, OffsetCalculator calculator)
+        private void ValidateParameters(Document doc, Settings settings)
         {
-            try
+            List<string> errors = new List<string>();
+
+            _offsetParameterValid = false;
+            _wallDistanceParameterValid = false;
+
+            if (settings.AutoUpdateEnabled)
             {
-                // Проверяем наличие и доступность параметра
-                Parameter targetParam = familyInstance.LookupParameter(Constants.TARGET_PARAMETER_NAME);
-                if (targetParam == null)
+                var offsetValidation = ParameterValidator.ValidateParameter(doc, Constants.TARGET_PARAMETER_NAME);
+                if (offsetValidation.IsValid)
                 {
-                    TaskDialog.Show("Предупреждение",
-                        string.Format(Constants.PARAMETER_NOT_FOUND_MESSAGE, Constants.TARGET_PARAMETER_NAME));
-                    return false;
+                    _offsetParameterValid = true;
                 }
-
-                if (targetParam.IsReadOnly)
+                else
                 {
-                    TaskDialog.Show("Предупреждение",
-                        string.Format(Constants.PARAMETER_READ_ONLY_MESSAGE, Constants.TARGET_PARAMETER_NAME));
-                    return false;
+                    errors.Add($"Параметр '{Constants.TARGET_PARAMETER_NAME}':\n{offsetValidation.ErrorMessage}");
+                    settings.AutoUpdateEnabled = false;
                 }
-
-                // Вычисляем новое значение
-                double? newOffsetMm = calculator.CalculateOffset(familyInstance, _settings.RoundingStepMm);
-                if (!newOffsetMm.HasValue)
-                    return true; // Не удалось вычислить, но это не критическая ошибка
-
-                // Получаем текущее значение параметра
-                double currentValueMm = 0;
-                if (targetParam.HasValue)
-                {
-                    if (targetParam.StorageType == StorageType.Double)
-                    {
-                        double currentValueFeet = targetParam.AsDouble();
-                        currentValueMm = UnitUtils.ConvertFromInternalUnits(currentValueFeet, UnitTypeId.Millimeters);
-                    }
-                    else if (targetParam.StorageType == StorageType.Integer)
-                    {
-                        currentValueMm = targetParam.AsInteger();
-                    }
-                }
-
-                // Обновляем только если значение изменилось
-                if (Math.Abs(currentValueMm - newOffsetMm.Value) > 0.1) // Допуск 0.1 мм
-                {
-                    if (targetParam.StorageType == StorageType.Double)
-                    {
-                        double newValueFeet = UnitUtils.ConvertToInternalUnits(newOffsetMm.Value, UnitTypeId.Millimeters);
-                        targetParam.Set(newValueFeet);
-                    }
-                    else if (targetParam.StorageType == StorageType.Integer)
-                    {
-                        targetParam.Set((int)Math.Round(newOffsetMm.Value));
-                    }
-                }
-
-                return true;
             }
-            catch
+
+            if (settings.AutoUpdateWallDistanceEnabled)
             {
-                return true; // Не критическая ошибка для отдельного элемента
+                var wallDistanceValidation = ParameterValidator.ValidateParameter(doc, Constants.WALL_DISTANCE_PARAMETER_NAME);
+                if (wallDistanceValidation.IsValid)
+                {
+                    _wallDistanceParameterValid = true;
+                }
+                else
+                {
+                    errors.Add($"Параметр '{Constants.WALL_DISTANCE_PARAMETER_NAME}':\n{wallDistanceValidation.ErrorMessage}");
+                    settings.AutoUpdateWallDistanceEnabled = false;
+                }
+            }
+
+            if (errors.Count > 0)
+            {
+                string errorMessage = "Ошибка автоматического обновления\n\n" +
+                    string.Join("\n\n", errors) + "\n\n" +
+                    "Автоматическое обновление соответствующих параметров выключено.";
+
+                TaskDialog.Show("Ошибка обновления", errorMessage);
+                settings.Save();
             }
         }
         #endregion

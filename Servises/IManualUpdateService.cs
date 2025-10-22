@@ -6,5 +6,7 @@ namespace LevelOffsetUpdater.Services
     public interface IManualUpdateService : IExternalEventHandler
     {
         void Raise();
+        void RaiseOffsetUpdate();
+        void RaiseWallDistanceUpdate();
     }
 }

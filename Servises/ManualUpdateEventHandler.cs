@@ -4,19 +4,20 @@ using LevelOffsetUpdater.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Windows.Forms;
-using static System.Net.Mime.MediaTypeNames;
-using System.Xml.Linq;
 using Settings = LevelOffsetUpdater.Core.Settings;
 
 namespace LevelOffsetUpdater.Services
 {
-    // Обработчик ручного обновления всех элементов
+    // Обработчик ручного обновления элементов
     public class ManualUpdateEventHandler : IManualUpdateService
     {
         #region Fields
         private readonly IElementFilter _elementFilter;
         private ExternalEvent _externalEvent;
+        private bool _updateOffsetOnly;
+        private bool _updateWallDistanceOnly;
         #endregion
 
         #region Constructor
@@ -28,15 +29,29 @@ namespace LevelOffsetUpdater.Services
         #endregion
 
         #region IManualUpdateService Implementation
-        // Запускает ручное обновление
+        public void RaiseOffsetUpdate()
+        {
+            _updateOffsetOnly = true;
+            _updateWallDistanceOnly = false;
+            _externalEvent.Raise();
+        }
+
+        public void RaiseWallDistanceUpdate()
+        {
+            _updateOffsetOnly = false;
+            _updateWallDistanceOnly = true;
+            _externalEvent.Raise();
+        }
+
         public void Raise()
         {
+            _updateOffsetOnly = false;
+            _updateWallDistanceOnly = false;
             _externalEvent.Raise();
         }
         #endregion
 
         #region IExternalEventHandler Implementation
-        // Выполняет ручное обновление всех элементов
         public void Execute(UIApplication app)
         {
             Document doc = app.ActiveUIDocument?.Document;
@@ -45,9 +60,14 @@ namespace LevelOffsetUpdater.Services
             try
             {
                 var settings = Settings.Load();
-                var elements = GetTargetElements(doc);
 
-                // Проверяем количество элементов и показываем предупреждение при необходимости
+                if (!ValidateProjectParameters(doc, settings))
+                {
+                    return;
+                }
+
+                var elements = ElementUpdateService.GetTargetElements(doc, _elementFilter);
+
                 if (elements.Count > settings.WarningThreshold)
                 {
                     string warningMessage = string.Format(Constants.LARGE_UPDATE_WARNING_MESSAGE, elements.Count);
@@ -58,13 +78,9 @@ namespace LevelOffsetUpdater.Services
                         return;
                 }
 
-                var updateResult = UpdateAllElements(doc, elements, settings);
+                var updateResult = UpdateElements(doc, elements, settings);
 
-                string message = updateResult.Success
-                    ? string.Format(Constants.UPDATE_COMPLETED_MESSAGE, updateResult.UpdatedCount)
-                    : string.Format(Constants.UPDATE_ERROR_MESSAGE, updateResult.Message);
-
-                TaskDialog.Show("Результат обновления", message);
+                ShowUpdateResults(updateResult);
             }
             catch (Exception ex)
             {
@@ -79,31 +95,54 @@ namespace LevelOffsetUpdater.Services
         #endregion
 
         #region Private Methods
-        // Получает все целевые элементы в документе
-        private List<FamilyInstance> GetTargetElements(Document doc)
+        private bool ValidateProjectParameters(Document doc, Settings settings)
         {
-            var elements = new List<FamilyInstance>();
+            List<string> errors = new List<string>();
 
-            foreach (var category in Constants.TARGET_CATEGORIES)
+            // Проверяем параметр отметки расположения
+            if (!_updateWallDistanceOnly)
             {
-                var collector = new FilteredElementCollector(doc)
-                    .OfCategory(category)
-                    .WhereElementIsNotElementType()
-                    .Cast<FamilyInstance>()
-                    .Where(fi => _elementFilter.IsValidElement(fi));
-
-                elements.AddRange(collector);
+                var offsetValidation = ParameterValidator.ValidateParameter(doc, Constants.TARGET_PARAMETER_NAME);
+                if (!offsetValidation.IsValid)
+                {
+                    errors.Add(offsetValidation.ErrorMessage);
+                    settings.AutoUpdateEnabled = false;
+                }
             }
 
-            return elements;
+            // Проверяем параметр расстояния до низа стены
+            if (!_updateOffsetOnly)
+            {
+                var wallDistanceValidation = ParameterValidator.ValidateParameter(doc, Constants.WALL_DISTANCE_PARAMETER_NAME);
+                if (!wallDistanceValidation.IsValid)
+                {
+                    errors.Add(wallDistanceValidation.ErrorMessage);
+                    settings.AutoUpdateWallDistanceEnabled = false;
+                }
+            }
+
+            if (errors.Count > 0)
+            {
+                string errorMessage = "Ошибка обновления\n\n" +
+                    string.Join("\n\n", errors) + "\n\n" +
+                    "Автоматическое обновление соответствующих параметров выключено.";
+
+                TaskDialog.Show("Ошибка обновления", errorMessage);
+                settings.Save();
+
+                return false;
+            }
+
+            return true;
         }
 
-        // Обновляет все элементы в одной транзакции
-        private UpdateResult UpdateAllElements(Document doc, List<FamilyInstance> elements, Settings settings)
+        private UpdateResult UpdateElements(Document doc, List<FamilyInstance> elements, Settings settings)
         {
             var result = new UpdateResult();
+            var offsetErrors = new List<ElementId>();
+            var wallDistanceErrors = new List<ElementId>();
 
-            using (Transaction trans = new Transaction(doc, "Ручное обновление отметок"))
+            using (Transaction trans = new Transaction(doc, "Ручное обновление параметров"))
             {
                 trans.Start();
 
@@ -113,21 +152,55 @@ namespace LevelOffsetUpdater.Services
                 {
                     result.ProcessedCount++;
 
-                    try
+                    bool offsetUpdated = false;
+                    bool wallDistanceUpdated = false;
+
+                    // Обновляем отметку расположения (если не режим только расстояния)
+                    if (!_updateWallDistanceOnly)
                     {
-                        if (UpdateElementOffset(element, calculator, settings))
+                        try
                         {
-                            result.UpdatedCount++;
+                            offsetUpdated = ElementUpdateService.UpdateElementOffset(element, calculator, settings);
+                            if (!offsetUpdated)
+                            {
+                                offsetErrors.Add(element.Id);
+                            }
+                        }
+                        catch
+                        {
+                            offsetErrors.Add(element.Id);
                         }
                     }
-                    catch
+
+                    // Обновляем расстояние до низа стены (если не режим только отметок)
+                    if (!_updateOffsetOnly)
                     {
-                        result.ErrorCount++;
+                        try
+                        {
+                            wallDistanceUpdated = ElementUpdateService.UpdateWallDistance(element, calculator, settings);
+                            if (!wallDistanceUpdated)
+                            {
+                                wallDistanceErrors.Add(element.Id);
+                            }
+                        }
+                        catch
+                        {
+                            wallDistanceErrors.Add(element.Id);
+                        }
+                    }
+
+                    if (offsetUpdated || wallDistanceUpdated)
+                    {
+                        result.UpdatedCount++;
                     }
                 }
 
                 trans.Commit();
             }
+
+            result.OffsetErrors = offsetErrors;
+            result.WallDistanceErrors = wallDistanceErrors;
+            result.ErrorCount = offsetErrors.Count + wallDistanceErrors.Count;
 
             if (result.ErrorCount > 0)
             {
@@ -137,31 +210,56 @@ namespace LevelOffsetUpdater.Services
             return result;
         }
 
-        // Обновляет отметку расположения для элемента
-        private bool UpdateElementOffset(FamilyInstance familyInstance, OffsetCalculator calculator, Settings settings)
+        private void ShowUpdateResults(UpdateResult result)
         {
-            // Проверяем наличие и доступность параметра
-            Parameter targetParam = familyInstance.LookupParameter(Constants.TARGET_PARAMETER_NAME);
-            if (targetParam == null || targetParam.IsReadOnly)
-                return false;
-
-            // Вычисляем новое значение
-            double? newOffsetMm = calculator.CalculateOffset(familyInstance, settings.RoundingStepMm);
-            if (!newOffsetMm.HasValue)
-                return false;
-
-            // Устанавливаем новое значение
-            if (targetParam.StorageType == StorageType.Double)
+            if (result.ErrorCount == 0)
             {
-                double newValueFeet = UnitUtils.ConvertToInternalUnits(newOffsetMm.Value, UnitTypeId.Millimeters);
-                targetParam.Set(newValueFeet);
-            }
-            else if (targetParam.StorageType == StorageType.Integer)
-            {
-                targetParam.Set((int)Math.Round(newOffsetMm.Value));
+                string message = string.Format(Constants.UPDATE_COMPLETED_MESSAGE, result.UpdatedCount);
+                TaskDialog.Show("Результат обновления", message);
+                return;
             }
 
-            return true;
+            // Формируем сообщение с группировкой ошибок по параметрам
+            StringBuilder errorMessage = new StringBuilder();
+            errorMessage.AppendLine($"Обработано элементов: {result.ProcessedCount}");
+            errorMessage.AppendLine($"Успешно обновлено: {result.UpdatedCount}");
+            errorMessage.AppendLine($"Ошибок: {result.ErrorCount}");
+            errorMessage.AppendLine();
+
+            if (result.OffsetErrors.Count > 0)
+            {
+                errorMessage.AppendLine($"Не удалось обновить параметр '{Constants.TARGET_PARAMETER_NAME}':");
+                errorMessage.AppendLine(string.Join(", ", result.OffsetErrors.Select(id => id.IntegerValue)));
+                errorMessage.AppendLine();
+            }
+
+            if (result.WallDistanceErrors.Count > 0)
+            {
+                errorMessage.AppendLine($"Не удалось обновить параметр '{Constants.WALL_DISTANCE_PARAMETER_NAME}':");
+                errorMessage.AppendLine(string.Join(", ", result.WallDistanceErrors.Select(id => id.IntegerValue)));
+            }
+
+            // Показываем окно с TextBox для длинного списка ID
+            var errorForm = new System.Windows.Forms.Form
+            {
+                Text = "Результат обновления с ошибками",
+                Width = 600,
+                Height = 400,
+                StartPosition = FormStartPosition.CenterScreen
+            };
+
+            var textBox = new System.Windows.Forms.TextBox
+            {
+                Multiline = true,
+                ScrollBars = ScrollBars.Both,
+                Dock = DockStyle.Fill,
+                Text = errorMessage.ToString(),
+                ReadOnly = true,
+                Font = new System.Drawing.Font("Consolas", 9)
+            };
+
+            errorForm.Controls.Add(textBox);
+            errorForm.ShowDialog();
         }
         #endregion
     }

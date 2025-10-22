@@ -1,4 +1,7 @@
-﻿namespace LevelOffsetUpdater.Core
+﻿using Autodesk.Revit.DB;
+using System.Collections.Generic;
+
+namespace LevelOffsetUpdater.Core
 {
     // Результат операции обновления элементов
     public class UpdateResult
@@ -9,6 +12,8 @@
         public int ProcessedCount { get; set; }
         public int UpdatedCount { get; set; }
         public int ErrorCount { get; set; }
+        public List<ElementId> OffsetErrors { get; set; }
+        public List<ElementId> WallDistanceErrors { get; set; }
         #endregion
 
         #region Constructor
@@ -19,6 +24,8 @@
             ProcessedCount = 0;
             UpdatedCount = 0;
             ErrorCount = 0;
+            OffsetErrors = new List<ElementId>();
+            WallDistanceErrors = new List<ElementId>();
         }
         #endregion
     }

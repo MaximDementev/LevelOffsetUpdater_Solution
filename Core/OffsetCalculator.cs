@@ -52,6 +52,38 @@ namespace LevelOffsetUpdater.Core
                 return null;
             }
         }
+
+        // Вычисляет расстояние от элемента до низа стены-основы
+        public double? CalculateDistanceToWallBase(FamilyInstance familyInstance, int roundingStepMm)
+        {
+            try
+            {
+                // Получаем стену-основу
+                Wall hostWall = familyInstance.Host as Wall;
+                if (hostWall == null)
+                    return null;
+
+                // Получаем отметку низа стены
+                double wallBaseElevationMm = GetWallBaseElevation(hostWall);
+
+                // Получаем отметку расположения элемента
+                double? elementOffsetMm = CalculateOffset(familyInstance, roundingStepMm);
+                if (!elementOffsetMm.HasValue)
+                    return null;
+
+                // Вычисляем расстояние
+                double distanceToWallBaseMm = elementOffsetMm.Value - wallBaseElevationMm;
+
+                // Округляем согласно заданному шагу
+                double roundedDistanceMm = Math.Round(distanceToWallBaseMm / roundingStepMm) * roundingStepMm;
+
+                return roundedDistanceMm;
+            }
+            catch
+            {
+                return null;
+            }
+        }
         #endregion
 
         #region Private Methods
@@ -94,6 +126,34 @@ namespace LevelOffsetUpdater.Core
                 // Игнорируем ошибки получения параметра
             }
             return 0.0;
+        }
+
+        // Получает отметку низа стены в миллиметрах
+        private double GetWallBaseElevation(Wall wall)
+        {
+            try
+            {
+                // Получаем уровень стены
+                ElementId levelId = wall.get_Parameter(BuiltInParameter.WALL_BASE_CONSTRAINT)?.AsElementId();
+                if (levelId == null || levelId == ElementId.InvalidElementId)
+                    return 0.0;
+
+                Level level = _document.GetElement(levelId) as Level;
+                if (level == null)
+                    return 0.0;
+
+                // Получаем смещение низа стены от уровня
+                Parameter baseOffsetParam = wall.get_Parameter(BuiltInParameter.WALL_BASE_OFFSET);
+                double baseOffsetFeet = baseOffsetParam?.AsDouble() ?? 0.0;
+
+                // Вычисляем итоговую отметку низа стены
+                double wallBaseElevationFeet = level.Elevation + baseOffsetFeet;
+                return UnitUtils.ConvertFromInternalUnits(wallBaseElevationFeet, UnitTypeId.Millimeters);
+            }
+            catch
+            {
+                return 0.0;
+            }
         }
         #endregion
     }

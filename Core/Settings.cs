@@ -11,6 +11,7 @@ namespace LevelOffsetUpdater.Core
     {
         #region Properties
         public bool AutoUpdateEnabled { get; set; } = false;
+        public bool AutoUpdateWallDistanceEnabled { get; set; } = false;
         public int RoundingStepMm { get; set; } = Constants.DEFAULT_ROUNDING_STEP_MM;
         public int WarningThreshold { get; set; } = Constants.DEFAULT_WARNING_THRESHOLD;
         #endregion

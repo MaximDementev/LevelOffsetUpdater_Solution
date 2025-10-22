@@ -7,7 +7,6 @@ using LevelOffsetUpdater.Services;
 
 namespace KRGPMagic.Plugins.LevelOffsetUpdater
 {
-    // Команда для ручного обновления отметок расположения
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
     public class UpdateCommand : IExternalCommand
@@ -40,7 +39,7 @@ namespace KRGPMagic.Plugins.LevelOffsetUpdater
                     return Result.Failed;
                 }
 
-                manualUpdateService.Raise();
+                manualUpdateService.RaiseOffsetUpdate();
                 return Result.Succeeded;
             }
             catch (Exception ex)
