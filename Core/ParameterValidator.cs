@@ -74,16 +74,20 @@ namespace LevelOffsetUpdater.Core
                 }
             }
 
-            // Проверка 4: Параметр может изменяться по экземплярам группы
-            if (paramDefinition is InternalDefinition internalDef)
-            {
-                if (!internalDef.VariesAcrossGroups)
-                {
-                    result.IsValid = false;
-                    result.ErrorMessage = $"Параметр '{parameterName}' не может изменяться по экземплярам группы.";
-                    return result;
-                }
-            }
+            //// Проверка 4: Параметр может изменяться по экземплярам группы
+            //if (paramDefinition is InternalDefinition internalDef)
+            //{
+            //    if (!internalDef.VariesAcrossGroups)
+            //    {
+            //        result.IsValid = false;
+            //        result.ErrorMessage = $"Параметр '{parameterName}' не может изменяться по экземплярам группы.";
+            //        return result;
+            //    }
+            //}
+
+            // выключено, потому что параметр отметки от нуля - это числовой параметр,
+            // его нельзя сделать иземняющимся по экземплярам групп.
+            // Нужно вместо него использовать тип парамтера - расстояние
 
             return result;
         }
